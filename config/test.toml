@@ -1,0 +1,6 @@
+# Overrides on top of default.toml for the e2e test suite, so tests never
+# touch the same database as local development.
+env = "test"
+
+[mongo]
+database = "gohighlevel_round1_test"

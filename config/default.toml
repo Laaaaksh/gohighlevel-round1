@@ -1,0 +1,10 @@
+env = "dev"
+
+[server]
+port = "8080"
+allowed_origin = "http://localhost:3000"
+
+[mongo]
+uri = "mongodb://localhost:27017"
+database = "gohighlevel_round1"
+connect_timeout_seconds = 10

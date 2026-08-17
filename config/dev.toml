@@ -1,0 +1,3 @@
+# Overrides on top of default.toml for local development.
+# Empty for now - the defaults already target a local MongoDB and port 8080.
+env = "dev"
