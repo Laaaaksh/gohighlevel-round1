@@ -90,7 +90,7 @@ func (r *Repository) List(ctx context.Context) ([]Item, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	items := make([]Item, 0)
 	if err := cursor.All(ctx, &items); err != nil {

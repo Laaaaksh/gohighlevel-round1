@@ -24,6 +24,7 @@ const (
 	msgSeedItemFailed   = "failed to seed item"
 	msgSeedItemCreated  = "seeded item"
 	msgSeedComplete     = "seed complete"
+	msgDisconnectFailed = "mongo disconnect failed"
 
 	logFieldError = "error"
 	logFieldName  = "name"
@@ -59,7 +60,11 @@ func main() {
 		log.Error(msgConnectFailed, logFieldError, err)
 		os.Exit(1)
 	}
-	defer client.Disconnect(ctx)
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			log.Error(msgDisconnectFailed, logFieldError, err)
+		}
+	}()
 
 	collection := client.Database(cfg.Mongo.Database).Collection(entities.CollectionItems)
 	repo := item.NewRepository(collection)

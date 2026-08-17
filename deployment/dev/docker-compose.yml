@@ -1,0 +1,14 @@
+# Fallback only. The primary path is the local MongoDB brew service on the
+# default port 27017 - see the root README. Use this compose file only if
+# that service is unavailable on interview day.
+services:
+  mongo:
+    image: mongo:7
+    container_name: gohighlevel-round1-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:

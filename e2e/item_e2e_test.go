@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	testEnvVar        = "APP_ENV"
-	testEnvValue      = "test"
-	connectTimeout    = 5 * time.Second
+	testEnvVar          = "APP_ENV"
+	testEnvValue        = "test"
+	connectTimeout      = 5 * time.Second
 	testItemName        = "E2E Item"
 	testItemDescription = "Created by the item e2e suite."
 )
@@ -40,7 +40,7 @@ func (s *ItemE2ETestSuite) SetupSuite() {
 		s.T().Skip(skipReasonShortMode)
 	}
 
-	os.Setenv(testEnvVar, testEnvValue)
+	s.Require().NoError(os.Setenv(testEnvVar, testEnvValue))
 	cfg, err := config.Load()
 	s.Require().NoError(err)
 
@@ -62,7 +62,7 @@ func (s *ItemE2ETestSuite) TearDownSuite() {
 	if s.client == nil {
 		return
 	}
-	s.client.Disconnect(s.ctx)
+	s.NoError(s.client.Disconnect(s.ctx))
 }
 
 func (s *ItemE2ETestSuite) SetupTest() {
@@ -97,7 +97,7 @@ func (s *ItemE2ETestSuite) TestDeleteItemRemovesIt() {
 }
 
 const (
-	skipReasonShortMode = "skipping e2e test in short mode"
+	skipReasonShortMode  = "skipping e2e test in short mode"
 	skipReasonNoDatabase = "skipping e2e test: mongodb is not reachable"
 )
 
