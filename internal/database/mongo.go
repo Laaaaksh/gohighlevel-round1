@@ -33,6 +33,9 @@ func Connect(ctx context.Context, cfg config.MongoConfig) (*mongo.Client, error)
 	}
 
 	if err := client.Ping(connectCtx, nil); err != nil {
+		// mongo.Connect already started the connection pool and topology
+		// monitoring goroutines, so they must be released before failing.
+		_ = client.Disconnect(connectCtx)
 		return nil, fmt.Errorf("%w: %v", ErrPingMongo, err)
 	}
 

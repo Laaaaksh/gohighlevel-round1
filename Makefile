@@ -29,10 +29,10 @@ test-coverage: ## Run tests with a coverage report
 
 lint: ## Run go vet (and golangci-lint if installed)
 	go vet ./...
-	@command -v golangci-lint >/dev/null 2>&1 && golangci-lint run || echo "golangci-lint not installed, skipping"
+	@if command -v golangci-lint >/dev/null 2>&1; then golangci-lint run; else echo "golangci-lint not installed, skipping"; fi
 
 fmt: ## Format Go source
-	gofmt -w .
+	@find . -type f -name '*.go' -not -path "./web/*" -exec gofmt -w {} +
 
 mock: ## Regenerate gomock mocks (go:generate directives)
 	go generate ./...

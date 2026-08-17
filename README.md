@@ -27,7 +27,7 @@ frontend demo pages - so that on interview day you can go straight from
 ### Backend
 
 ```bash
-cp .env.example .env        # optional - defaults already match a local Mongo
+cp .env.example .env        # optional - loaded at startup; defaults already match a local Mongo
 go mod tidy
 make seed                   # inserts 3 sample items so the frontend has data
 make dev                    # starts the API on :8080

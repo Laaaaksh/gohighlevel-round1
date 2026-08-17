@@ -1,7 +1,8 @@
 // Package config loads typed configuration from config/default.toml,
 // overlaid by an environment-specific TOML file, overlaid by a small set of
-// well-known environment variables. Nothing in the service reads an env var
-// or a config value by string key outside this package.
+// well-known environment variables (themselves optionally seeded from a
+// local .env file). Nothing in the service reads an env var or a config
+// value by string key outside this package.
 package config
 
 import (
@@ -9,6 +10,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
 
@@ -17,6 +19,9 @@ const (
 	configDirName                     = "config"
 	configDirRelativeOneUp            = "../config"
 	configDirRelativeTwoUp            = "../../config"
+	dotEnvFileName                    = ".env"
+	dotEnvRelativeOneUp               = "../.env"
+	dotEnvRelativeTwoUp               = "../../.env"
 	defaultConfigName                 = "default"
 	defaultAppEnv                     = "dev"
 	defaultMongoConnectTimeoutSeconds = 10
@@ -55,10 +60,28 @@ type Config struct {
 	Mongo  MongoConfig  `mapstructure:"mongo"`
 }
 
-// Load reads config/default.toml, merges config/<APP_ENV>.toml on top, then
-// applies the PORT and MONGO_URI environment variable overrides the brief
-// requires explicitly.
+// loadDotEnv seeds the process environment from a local .env file so
+// `cp .env.example .env` works without exporting anything by hand. It is
+// deliberately best-effort: a missing file is normal in production and CI,
+// where real environment variables are supplied instead. godotenv never
+// overwrites a variable that is already set, so a real shell variable always
+// wins over the file.
+func loadDotEnv() {
+	// Same depth problem as the config search paths below: go test runs from
+	// the package directory, not the repo root.
+	for _, path := range []string{dotEnvFileName, dotEnvRelativeOneUp, dotEnvRelativeTwoUp} {
+		if err := godotenv.Load(path); err == nil {
+			return
+		}
+	}
+}
+
+// Load reads a local .env file if present, then config/default.toml, merges
+// config/<APP_ENV>.toml on top, then applies the PORT and MONGO_URI
+// environment variable overrides the brief requires explicitly.
 func Load() (Config, error) {
+	loadDotEnv()
+
 	env := os.Getenv(envAppEnv)
 	if env == "" {
 		env = defaultAppEnv

@@ -21,9 +21,11 @@ type LoadState =
 // below makes visible.
 export default function CSRDemoPage() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [reloadCount, setReloadCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setState({ status: "loading" });
 
     ItemsApi.list()
       .then((items) => {
@@ -38,12 +40,13 @@ export default function CSRDemoPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadCount]);
 
-  function handleCreated(item: Item) {
-    setState((prev) =>
-      prev.status === "ready" ? { status: "ready", items: [item, ...prev.items] } : prev,
-    );
+  // Refetch rather than splice the new item into the existing list: when the
+  // initial load failed there is no list to splice into, and silently
+  // dropping a successful create invites the user to submit it twice.
+  function handleCreated() {
+    setReloadCount((count) => count + 1);
   }
 
   return (
