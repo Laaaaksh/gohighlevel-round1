@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
@@ -20,8 +21,7 @@ const (
 	configDirRelativeOneUp            = "../config"
 	configDirRelativeTwoUp            = "../../config"
 	dotEnvFileName                    = ".env"
-	dotEnvRelativeOneUp               = "../.env"
-	dotEnvRelativeTwoUp               = "../../.env"
+	goModFileName                     = "go.mod"
 	defaultConfigName                 = "default"
 	defaultAppEnv                     = "dev"
 	defaultMongoConnectTimeoutSeconds = 10
@@ -67,12 +67,38 @@ type Config struct {
 // overwrites a variable that is already set, so a real shell variable always
 // wins over the file.
 func loadDotEnv() {
-	// Same depth problem as the config search paths below: go test runs from
-	// the package directory, not the repo root.
-	for _, path := range []string{dotEnvFileName, dotEnvRelativeOneUp, dotEnvRelativeTwoUp} {
-		if err := godotenv.Load(path); err == nil {
-			return
+	if err := godotenv.Load(dotEnvFileName); err == nil {
+		return
+	}
+
+	// go test runs from the package directory, not the repo root, so fall back
+	// to the module root. The search stops there deliberately: climbing past
+	// it would silently pick up an unrelated .env from a parent directory and
+	// change the port or the database the service talks to.
+	root, ok := moduleRoot()
+	if !ok {
+		return
+	}
+	_ = godotenv.Load(filepath.Join(root, dotEnvFileName))
+}
+
+// moduleRoot walks up from the working directory to the nearest directory
+// holding a go.mod, which is this project's boundary.
+func moduleRoot() (string, bool) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", false
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(dir, goModFileName)); err == nil {
+			return dir, true
 		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", false
+		}
+		dir = parent
 	}
 }
 

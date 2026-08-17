@@ -6,6 +6,7 @@ import { ApiError } from "@/lib/api/client";
 import type { Item } from "@/types/item";
 
 const FIELD_NAME = "name";
+const FIELD_NAME_ERROR = "name-error";
 const FIELD_DESCRIPTION = "description";
 
 // A discriminated union makes "submitting and errored" unrepresentable -
@@ -37,6 +38,7 @@ export function ItemForm({ onCreated }: { onCreated: (item: Item) => void }) {
   }
 
   const submitting = state.status === "submitting";
+  const errored = state.status === "error";
 
   return (
     <form onSubmit={handleSubmit} className="item-form">
@@ -48,6 +50,8 @@ export function ItemForm({ onCreated }: { onCreated: (item: Item) => void }) {
           onChange={(e) => setName(e.target.value)}
           required
           disabled={submitting}
+          aria-invalid={errored}
+          aria-describedby={errored ? FIELD_NAME_ERROR : undefined}
         />
       </div>
       <div className="form-field">
@@ -63,7 +67,7 @@ export function ItemForm({ onCreated }: { onCreated: (item: Item) => void }) {
         {submitting ? "Creating…" : "Create item"}
       </button>
       {state.status === "error" && (
-        <p role="alert" className="form-error" aria-describedby={FIELD_NAME}>
+        <p id={FIELD_NAME_ERROR} role="alert" className="form-error">
           {state.message}
         </p>
       )}

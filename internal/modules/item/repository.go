@@ -24,9 +24,11 @@ var (
 )
 
 const (
-	indexNameItemsByName = "idx_items_name"
-	indexAscending       = 1
-	operatorSet          = "$set"
+	indexNameItemsByName      = "idx_items_name"
+	indexNameItemsByCreatedAt = "idx_items_created_at"
+	indexAscending            = 1
+	indexDescending           = -1
+	operatorSet               = "$set"
 )
 
 // Item is the domain model, persisted as-is in the items collection.
@@ -61,12 +63,19 @@ func NewRepository(collection *mongo.Collection) *Repository {
 	return &Repository{collection: collection}
 }
 
-// EnsureIndexes creates the indexes this repository's queries rely on.
-// CreateOne is idempotent, so it is safe to call on every boot.
+// EnsureIndexes creates the indexes this repository's queries rely on:
+// name for lookups by name, createdAt to back List's sort. Index creation is
+// idempotent, so it is safe to call on every boot.
 func (r *Repository) EnsureIndexes(ctx context.Context) error {
-	_, err := r.collection.Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys:    bson.D{{Key: entities.FieldName, Value: indexAscending}},
-		Options: options.Index().SetName(indexNameItemsByName),
+	_, err := r.collection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: entities.FieldName, Value: indexAscending}},
+			Options: options.Index().SetName(indexNameItemsByName),
+		},
+		{
+			Keys:    bson.D{{Key: entities.FieldCreatedAt, Value: indexDescending}},
+			Options: options.Index().SetName(indexNameItemsByCreatedAt),
+		},
 	})
 	return err
 }
@@ -96,8 +105,12 @@ func (r *Repository) GetByID(ctx context.Context, id bson.ObjectID) (*Item, erro
 	return &found, nil
 }
 
+// List returns every item, newest first. Without an explicit sort Mongo
+// returns natural order, which can change under the caller's feet when a
+// document is rewritten or a slot is reused.
 func (r *Repository) List(ctx context.Context) ([]Item, error) {
-	cursor, err := r.collection.Find(ctx, bson.M{})
+	sortByNewest := options.Find().SetSort(bson.D{{Key: entities.FieldCreatedAt, Value: indexDescending}})
+	cursor, err := r.collection.Find(ctx, bson.M{}, sortByNewest)
 	if err != nil {
 		return nil, err
 	}

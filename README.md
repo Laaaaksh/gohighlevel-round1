@@ -58,8 +58,11 @@ Open http://localhost:3000 - it links to the SSR and CSR demo pages.
 ## 2. Endpoint reference
 
 All write endpoints validate their body and return a consistent JSON error
-shape: `{"code": "...", "message": "...", "fields": {...}}` (see
-[`pkg/apperror`](pkg/apperror)).
+shape: `{"code": "...", "message": "..."}` (see
+[`pkg/apperror`](pkg/apperror)). A `"fields"` object is added when the
+failure is attributable to named fields - the explicit checks in `core.go`
+populate it; a body that fails Gin's binding tags outright returns the
+generic `BAD_REQUEST` message without it, so no validator internals leak.
 
 | Method | Path              | Description        |
 |--------|-------------------|---------------------|
@@ -91,7 +94,15 @@ curl -X PUT localhost:8080/api/items/<id> \
 curl -X DELETE localhost:8080/api/items/<id>
 
 # Error cases
-curl -X POST localhost:8080/api/items -d '{}'             # 400 - name required
+# Binding rejects the body outright - generic BAD_REQUEST, no "fields"
+curl -X POST localhost:8080/api/items -d '{}'
+
+# Passes binding, fails core's explicit check - VALIDATION_ERROR with
+# "fields": {"name": "Name is required."}
+curl -X POST localhost:8080/api/items \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"   "}'
+
 curl localhost:8080/api/items/not-an-id                    # 400 - invalid id
 curl localhost:8080/api/items/000000000000000000000000     # 404 - not found
 ```

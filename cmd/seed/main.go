@@ -43,13 +43,19 @@ var seedItems = []seedItem{
 	{Name: "Third Sample Item", Description: "A third starter item for sorting and pagination checks."},
 }
 
+// main does nothing but choose the exit code: os.Exit skips deferred calls,
+// so every cleanup-carrying step lives in run and returns an error instead.
 func main() {
-	log := logger.New()
+	if err := run(logger.New()); err != nil {
+		os.Exit(1)
+	}
+}
 
+func run(log *slog.Logger) error {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Error(msgConfigLoadFailed, logFieldError, err)
-		os.Exit(1)
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), seedTimeout)
@@ -58,7 +64,7 @@ func main() {
 	client, err := database.Connect(ctx, cfg.Mongo)
 	if err != nil {
 		log.Error(msgConnectFailed, logFieldError, err)
-		os.Exit(1)
+		return err
 	}
 	defer func() {
 		if err := client.Disconnect(ctx); err != nil {
@@ -71,11 +77,12 @@ func main() {
 
 	for _, seed := range seedItems {
 		if err := s.insert(ctx, seed); err != nil {
-			os.Exit(1)
+			return err
 		}
 	}
 
 	log.Info(msgSeedComplete, logFieldCount, len(seedItems))
+	return nil
 }
 
 // seeder holds the collaborators every insert needs, so insert itself takes

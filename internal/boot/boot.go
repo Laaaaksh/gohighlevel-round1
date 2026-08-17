@@ -48,10 +48,13 @@ func Boot(ctx context.Context, cfg config.Config) (app *App, err error) {
 	}
 
 	router := gin.New()
+	// Logging is registered outside Recovery on purpose: a panic unwinds
+	// straight through the inner interceptors, so if Recovery wrapped Logging
+	// the request that panicked would never be logged.
 	router.Use(
 		interceptors.RequestID(),
-		interceptors.Recovery(),
 		interceptors.Logging(),
+		interceptors.Recovery(),
 		interceptors.CORS(cfg.Server.AllowedOrigin),
 	)
 

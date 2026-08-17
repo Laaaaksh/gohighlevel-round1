@@ -9,6 +9,12 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"github.com/Laaaaksh/gohighlevel-round1/internal/database"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/logger"
+)
+
+const (
+	logMsgPingFailed = "mongodb ping failed"
+	logFieldError    = "error"
 )
 
 // pingTimeout bounds the liveness check. Without it the driver keeps trying
@@ -50,6 +56,9 @@ func (c *Core) Check(ctx context.Context) Status {
 	defer cancel()
 
 	if err := database.Ping(pingCtx, c.mongoClient); err != nil {
+		// Check returns only a Status, so this is the one place the cause
+		// survives - without it a 503 is indistinguishable from any other.
+		logger.Ctx(ctx).Error(logMsgPingFailed, logFieldError, err)
 		return Status{Status: StatusUnavailable, Database: DatabaseDown}
 	}
 	return Status{Status: StatusOK, Database: DatabaseConnected}

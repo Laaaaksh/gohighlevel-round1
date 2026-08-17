@@ -36,12 +36,20 @@ export async function request<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
+  // Headers, not object spread: HeadersInit is also allowed to be a Headers
+  // instance or a string[][], and spreading either silently yields no usable
+  // header names.
+  const headers = new Headers(init?.headers);
+  if (!headers.has(HEADER_CONTENT_TYPE)) {
+    headers.set(HEADER_CONTENT_TYPE, CONTENT_TYPE_JSON);
+  }
+
   // no-store: every page in this scaffold wants the current DB state, not a
   // cached response - see nextjs-frontend-standards' SSR/CSR/ISR table.
   const res = await fetch(`${API_BASE_URL}${path}`, {
     cache: "no-store",
     ...init,
-    headers: { [HEADER_CONTENT_TYPE]: CONTENT_TYPE_JSON, ...init?.headers },
+    headers,
   });
 
   if (!res.ok) {
