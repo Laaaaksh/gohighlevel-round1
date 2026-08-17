@@ -1,6 +1,6 @@
 // Package entities holds the item module's request/response DTOs and the
 // module-scoped constants (collection and field names) shared by
-// repository.go, core.go, and internal/database's index setup.
+// repository.go - including its EnsureIndexes - and core.go.
 package entities
 
 const (
