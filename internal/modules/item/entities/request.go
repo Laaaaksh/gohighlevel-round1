@@ -3,7 +3,8 @@ package entities
 // Struct tags must be literals, so the max values below cannot reference
 // MaxNameLength/MaxDescriptionLength directly. They are a first pass only:
 // core.go re-checks every write against those constants, so a drifted tag
-// cannot let a bad value reach the database.
+// cannot let a bad value reach the database. Both layers count characters,
+// not bytes - the binding tag's max is a rune count, so core's check is too.
 
 // CreateItemRequest is the inbound shape for POST /api/items. Gin's binding
 // tags handle presence and length checks.

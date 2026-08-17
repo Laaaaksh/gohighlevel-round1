@@ -29,11 +29,16 @@ const (
 	errMsgRepositoryDown = "repository unavailable"
 	testBlankName        = "   "
 	testPadCharacter     = "a"
+	// A three-byte rune, so a byte-based length check would see this name as
+	// 3x over the limit while the binding tag's rune count sees it at exactly
+	// the limit.
+	testMultiBytePadCharacter = "界"
 )
 
 var (
-	testTooLongName        = strings.Repeat(testPadCharacter, entities.MaxNameLength+1)
-	testTooLongDescription = strings.Repeat(testPadCharacter, entities.MaxDescriptionLength+1)
+	testTooLongName          = strings.Repeat(testPadCharacter, entities.MaxNameLength+1)
+	testTooLongDescription   = strings.Repeat(testPadCharacter, entities.MaxDescriptionLength+1)
+	testMaxLengthUnicodeName = strings.Repeat(testMultiBytePadCharacter, entities.MaxNameLength)
 )
 
 var testFixedTime = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
@@ -123,6 +128,26 @@ func (s *CoreTestSuite) TestCreateItemNameTooLong() {
 	s.Require().True(ok)
 	s.Equal(apperror.CodeValidationError, appErr.Code)
 	s.Equal(apperror.MsgNameTooLong, appErr.Fields[apperror.FieldName])
+}
+
+func (s *CoreTestSuite) TestCreateItemUnicodeNameAtMaxLength() {
+	expected := &item.Item{Name: testMaxLengthUnicodeName, Description: testItemDescription, CreatedAt: testFixedTime, UpdatedAt: testFixedTime}
+	testID, err := bson.ObjectIDFromHex(testItemIDHex)
+	s.Require().NoError(err)
+
+	s.mockRepo.EXPECT().
+		Create(s.ctx, expected).
+		DoAndReturn(func(_ context.Context, created *item.Item) error {
+			created.ID = testID
+			return nil
+		}).
+		Times(1)
+
+	result, err := s.core.CreateItem(s.ctx, entities.CreateItemRequest{Name: testMaxLengthUnicodeName, Description: testItemDescription})
+
+	s.NoError(err)
+	s.Require().NotNil(result)
+	s.Equal(testMaxLengthUnicodeName, result.Name)
 }
 
 func (s *CoreTestSuite) TestCreateItemDescriptionTooLong() {

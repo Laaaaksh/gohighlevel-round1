@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 
@@ -154,10 +155,10 @@ func validateItemFields(name, description string) *apperror.Error {
 	if strings.TrimSpace(name) == "" {
 		return validationError(apperror.FieldName, apperror.MsgNameRequired)
 	}
-	if len(name) > entities.MaxNameLength {
+	if utf8.RuneCountInString(name) > entities.MaxNameLength {
 		return validationError(apperror.FieldName, apperror.MsgNameTooLong)
 	}
-	if len(description) > entities.MaxDescriptionLength {
+	if utf8.RuneCountInString(description) > entities.MaxDescriptionLength {
 		return validationError(apperror.FieldDescription, apperror.MsgDescriptionTooLong)
 	}
 	return nil

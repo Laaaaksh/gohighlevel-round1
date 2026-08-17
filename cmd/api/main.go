@@ -16,7 +16,12 @@ import (
 	"github.com/Laaaaksh/gohighlevel-round1/internal/logger"
 )
 
-const shutdownTimeout = 10 * time.Second
+const (
+	shutdownTimeout = 10 * time.Second
+
+	// http.Server.Addr is "host:port"; an empty host means every interface.
+	addrPortSeparator = ":"
+)
 
 const (
 	msgConfigLoadFailed      = "failed to load config"
@@ -51,7 +56,7 @@ func main() {
 	}
 
 	server := &http.Server{
-		Addr:    ":" + cfg.Server.Port,
+		Addr:    addrPortSeparator + cfg.Server.Port,
 		Handler: app.Router,
 	}
 
