@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
@@ -71,7 +72,7 @@ func main() {
 
 func runServer(server *http.Server, log *slog.Logger, port string) {
 	log.Info(msgServerStarting, logFieldPort, port)
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Error(msgServerFailed, logFieldError, err)
 		os.Exit(1)
 	}
