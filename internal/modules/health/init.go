@@ -15,13 +15,11 @@ type module struct {
 func (m *module) GetCore() ICore           { return m.core }
 func (m *module) GetHandler() *HTTPHandler { return m.handler }
 
-var mod IModule
-
+// NewModule wires the module from the client it is handed, every call. It is
+// a var, not a func, so a test can swap in a fake module and restore the
+// original in TearDownTest per the testing standard.
 var NewModule = func(mongoClient *mongo.Client) IModule {
-	if mod == nil {
-		core := NewCore(mongoClient)
-		handler := NewHTTPHandler(core)
-		mod = &module{core: core, handler: handler}
-	}
-	return mod
+	core := NewCore(mongoClient)
+	handler := NewHTTPHandler(core)
+	return &module{core: core, handler: handler}
 }

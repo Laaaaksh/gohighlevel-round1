@@ -21,16 +21,12 @@ func (m *module) GetCore() ICore             { return m.core }
 func (m *module) GetHandler() *HTTPHandler   { return m.handler }
 func (m *module) GetRepository() IRepository { return m.repository }
 
-// mod is the module singleton. NewModule is a var, not a func, so tests can
-// swap it out; reset it in SetupTest/TearDownTest per the testing standard.
-var mod IModule
-
+// NewModule wires the module from the collection it is handed, every call.
+// It is a var, not a func, so a test can swap in a fake module and restore
+// the original in TearDownTest per the testing standard.
 var NewModule = func(collection *mongo.Collection) IModule {
-	if mod == nil {
-		repo := NewRepository(collection)
-		core := NewCore(repo)
-		handler := NewHTTPHandler(core)
-		mod = &module{core: core, handler: handler, repository: repo}
-	}
-	return mod
+	repo := NewRepository(collection)
+	core := NewCore(repo)
+	handler := NewHTTPHandler(core)
+	return &module{core: core, handler: handler, repository: repo}
 }

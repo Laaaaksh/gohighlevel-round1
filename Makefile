@@ -32,13 +32,13 @@ lint: ## Run go vet (and golangci-lint if installed)
 	@if command -v golangci-lint >/dev/null 2>&1; then golangci-lint run; else echo "golangci-lint not installed, skipping"; fi
 
 fmt: ## Format Go source
-	@find . -type f -name '*.go' -not -path "./web/*" -exec gofmt -w {} +
+	@find . -path ./web -prune -o -type f -name '*.go' -exec gofmt -w {} +
 
 mock: ## Regenerate gomock mocks (go:generate directives)
 	go generate ./...
 
 mock-clean: ## Remove generated mocks
-	find . -type d -name mock -not -path "./web/*" -exec rm -rf {} +
+	find . -path ./web -prune -o -type d -name mock -prune -exec rm -rf {} +
 
 tidy: ## Tidy go.mod/go.sum
 	go mod tidy

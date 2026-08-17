@@ -3,6 +3,7 @@ package item
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -44,6 +45,10 @@ func NewCoreWithClock(repo IRepository, now func() time.Time) *Core {
 }
 
 func (c *Core) CreateItem(ctx context.Context, req entities.CreateItemRequest) (*entities.ItemResponse, error) {
+	if err := validateItemFields(req.Name, req.Description); err != nil {
+		return nil, err
+	}
+
 	createdAt := c.now().UTC()
 	newItem := &Item{
 		Name:        req.Name,
@@ -93,12 +98,20 @@ func (c *Core) ListItems(ctx context.Context) ([]entities.ItemResponse, error) {
 }
 
 func (c *Core) UpdateItem(ctx context.Context, id string, req entities.UpdateItemRequest) (*entities.ItemResponse, error) {
+	if err := validateItemFields(req.Name, req.Description); err != nil {
+		return nil, err
+	}
+
 	objectID, err := parseObjectID(id)
 	if err != nil {
 		return nil, invalidIDError(id)
 	}
 
-	updated, err := c.repo.Update(ctx, objectID, &Item{Name: req.Name, Description: req.Description})
+	updated, err := c.repo.Update(ctx, objectID, &Item{
+		Name:        req.Name,
+		Description: req.Description,
+		UpdatedAt:   c.now().UTC(),
+	})
 	if errors.Is(err, ErrItemNotFound) {
 		return nil, notFoundError(id)
 	}
@@ -131,6 +144,27 @@ func (c *Core) DeleteItem(ctx context.Context, id string) error {
 
 func parseObjectID(id string) (bson.ObjectID, error) {
 	return bson.ObjectIDFromHex(id)
+}
+
+// validateItemFields is the explicit write-path check that sits behind Gin's
+// binding tags. It reads the limits from entities' constants, so the tag
+// literals in request.go are a first pass and these constants are the
+// authority - a mismatch cannot let a bad value through to the database.
+func validateItemFields(name, description string) *apperror.Error {
+	if strings.TrimSpace(name) == "" {
+		return validationError(apperror.FieldName, apperror.MsgNameRequired)
+	}
+	if len(name) > entities.MaxNameLength {
+		return validationError(apperror.FieldName, apperror.MsgNameTooLong)
+	}
+	if len(description) > entities.MaxDescriptionLength {
+		return validationError(apperror.FieldDescription, apperror.MsgDescriptionTooLong)
+	}
+	return nil
+}
+
+func validationError(field, detail string) *apperror.Error {
+	return apperror.New(apperror.CodeValidationError, apperror.MsgValidationFailed).WithField(field, detail)
 }
 
 func invalidIDError(id string) *apperror.Error {

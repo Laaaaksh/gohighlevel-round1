@@ -1,10 +1,12 @@
 package item
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Laaaaksh/gohighlevel-round1/internal/logger"
 	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/item/entities"
 	"github.com/Laaaaksh/gohighlevel-round1/pkg/apperror"
 )
@@ -37,7 +39,7 @@ func (h *HTTPHandler) RegisterRoutes(router gin.IRouter) {
 func (h *HTTPHandler) Create(c *gin.Context) {
 	var req entities.CreateItemRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		writeError(c, apperror.New(apperror.CodeBadRequest, apperror.MsgInvalidRequest))
+		writeError(c, bindError(c, err))
 		return
 	}
 
@@ -70,7 +72,7 @@ func (h *HTTPHandler) Get(c *gin.Context) {
 func (h *HTTPHandler) Update(c *gin.Context) {
 	var req entities.UpdateItemRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		writeError(c, apperror.New(apperror.CodeBadRequest, apperror.MsgInvalidRequest))
+		writeError(c, bindError(c, err))
 		return
 	}
 
@@ -90,11 +92,22 @@ func (h *HTTPHandler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// writeError maps a core error to its HTTP response. A non-*apperror.Error
-// (a bug, not an expected failure) still returns a safe, generic body.
+// bindError keeps the validator's detail out of the client response (it
+// names Go struct fields and tags) but logs it, so a rejected request is
+// still diagnosable from the server side.
+func bindError(c *gin.Context, err error) *apperror.Error {
+	ctx := c.Request.Context()
+	logger.Ctx(ctx).Warn(logMsgBindRequestFailed, logFieldError, err)
+	return apperror.Wrap(apperror.CodeBadRequest, apperror.MsgInvalidRequest, err)
+}
+
+// writeError maps a core error to its HTTP response. errors.As, not a bare
+// type assertion, so a deliberate 404 or 400 still maps correctly once a
+// caller wraps it with %w. A non-*apperror.Error (a bug, not an expected
+// failure) still returns a safe, generic body.
 func writeError(c *gin.Context, err error) {
-	appErr, ok := err.(*apperror.Error)
-	if !ok {
+	var appErr *apperror.Error
+	if !errors.As(err, &appErr) {
 		appErr = apperror.Wrap(apperror.CodeInternalError, apperror.MsgInternalError, err)
 	}
 	c.JSON(appErr.Code.HTTPStatus(), appErr.Response())

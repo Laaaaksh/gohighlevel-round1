@@ -18,9 +18,16 @@ import (
 	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/item/entities"
 )
 
-var ErrItemNotFound = errors.New("item not found")
+var (
+	ErrItemNotFound         = errors.New("item not found")
+	ErrUnexpectedInsertedID = errors.New("inserted id is not an object id")
+)
 
-const indexNameItemsByName = "idx_items_name"
+const (
+	indexNameItemsByName = "idx_items_name"
+	indexAscending       = 1
+	operatorSet          = "$set"
+)
 
 // Item is the domain model, persisted as-is in the items collection.
 type Item struct {
@@ -58,7 +65,7 @@ func NewRepository(collection *mongo.Collection) *Repository {
 // CreateOne is idempotent, so it is safe to call on every boot.
 func (r *Repository) EnsureIndexes(ctx context.Context) error {
 	_, err := r.collection.Indexes().CreateOne(ctx, mongo.IndexModel{
-		Keys:    bson.D{{Key: entities.FieldName, Value: 1}},
+		Keys:    bson.D{{Key: entities.FieldName, Value: indexAscending}},
 		Options: options.Index().SetName(indexNameItemsByName),
 	})
 	return err
@@ -69,7 +76,11 @@ func (r *Repository) Create(ctx context.Context, item *Item) error {
 	if err != nil {
 		return err
 	}
-	item.ID = result.InsertedID.(bson.ObjectID)
+	insertedID, ok := result.InsertedID.(bson.ObjectID)
+	if !ok {
+		return ErrUnexpectedInsertedID
+	}
+	item.ID = insertedID
 	return nil
 }
 
@@ -100,11 +111,13 @@ func (r *Repository) List(ctx context.Context) ([]Item, error) {
 }
 
 func (r *Repository) Update(ctx context.Context, id bson.ObjectID, item *Item) (*Item, error) {
+	// UpdatedAt is stamped by core (the clock owner), exactly as on create -
+	// the repository writes the timestamp it was handed, never its own.
 	update := bson.M{
-		"$set": bson.M{
+		operatorSet: bson.M{
 			entities.FieldName:        item.Name,
 			entities.FieldDescription: item.Description,
-			entities.FieldUpdatedAt:   time.Now().UTC(),
+			entities.FieldUpdatedAt:   item.UpdatedAt,
 		},
 	}
 	result := r.collection.FindOneAndUpdate(

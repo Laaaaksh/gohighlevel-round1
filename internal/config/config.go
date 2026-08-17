@@ -82,11 +82,33 @@ func loadDotEnv() {
 func Load() (Config, error) {
 	loadDotEnv()
 
-	env := os.Getenv(envAppEnv)
-	if env == "" {
-		env = defaultAppEnv
+	v, err := readConfigFiles(resolveEnv())
+	if err != nil {
+		return Config{}, err
 	}
+	applyEnvOverrides(v)
 
+	var cfg Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		return Config{}, fmt.Errorf("%w: %v", ErrUnmarshalConfig, err)
+	}
+	if cfg.Mongo.ConnectTimeoutSeconds == 0 {
+		cfg.Mongo.ConnectTimeoutSeconds = defaultMongoConnectTimeoutSeconds
+	}
+	return cfg, nil
+}
+
+func resolveEnv() string {
+	if env := os.Getenv(envAppEnv); env != "" {
+		return env
+	}
+	return defaultAppEnv
+}
+
+// readConfigFiles reads config/default.toml, then merges config/<env>.toml on
+// top of it. A missing environment file is fine - default.toml alone is a
+// complete configuration.
+func readConfigFiles(env string) (*viper.Viper, error) {
 	v := viper.New()
 	v.SetConfigType(configFileType)
 	// go test sets the working directory to the package under test, not the
@@ -97,30 +119,26 @@ func Load() (Config, error) {
 
 	v.SetConfigName(defaultConfigName)
 	if err := v.ReadInConfig(); err != nil {
-		return Config{}, fmt.Errorf("%w: %v", ErrLoadDefaultConfig, err)
+		return nil, fmt.Errorf("%w: %v", ErrLoadDefaultConfig, err)
 	}
 
 	v.SetConfigName(env)
 	if err := v.MergeInConfig(); err != nil {
 		var notFound viper.ConfigFileNotFoundError
 		if !errors.As(err, &notFound) {
-			return Config{}, fmt.Errorf("%w: %v", ErrLoadEnvConfig, err)
+			return nil, fmt.Errorf("%w: %v", ErrLoadEnvConfig, err)
 		}
 	}
+	return v, nil
+}
 
+// applyEnvOverrides lets the two variables the brief calls out explicitly win
+// over whatever the TOML files resolved to.
+func applyEnvOverrides(v *viper.Viper) {
 	if port := os.Getenv(envPort); port != "" {
 		v.Set(viperKeyServerPort, port)
 	}
 	if mongoURI := os.Getenv(envMongoURI); mongoURI != "" {
 		v.Set(viperKeyMongoURI, mongoURI)
 	}
-
-	var cfg Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return Config{}, fmt.Errorf("%w: %v", ErrUnmarshalConfig, err)
-	}
-	if cfg.Mongo.ConnectTimeoutSeconds == 0 {
-		cfg.Mongo.ConnectTimeoutSeconds = defaultMongoConnectTimeoutSeconds
-	}
-	return cfg, nil
 }

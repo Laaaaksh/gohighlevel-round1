@@ -6,6 +6,7 @@ package item_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -26,6 +27,13 @@ const (
 	testInvalidIDHex     = "not-a-valid-object-id"
 	testMissingIDHex     = "5f5f5f5f5f5f5f5f5f5f5f5f"
 	errMsgRepositoryDown = "repository unavailable"
+	testBlankName        = "   "
+	testPadCharacter     = "a"
+)
+
+var (
+	testTooLongName        = strings.Repeat(testPadCharacter, entities.MaxNameLength+1)
+	testTooLongDescription = strings.Repeat(testPadCharacter, entities.MaxDescriptionLength+1)
 )
 
 var testFixedTime = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
@@ -91,6 +99,54 @@ func (s *CoreTestSuite) TestCreateItemRepositoryError() {
 	s.Equal(apperror.CodeInternalError, appErr.Code)
 }
 
+// The validation tests below set no repository expectation on purpose: the
+// gomock controller fails the test if core reaches the repository at all,
+// which is the side effect being asserted.
+
+func (s *CoreTestSuite) TestCreateItemBlankName() {
+	result, err := s.core.CreateItem(s.ctx, entities.CreateItemRequest{Name: testBlankName, Description: testItemDescription})
+
+	s.Error(err)
+	s.Nil(result)
+	appErr, ok := err.(*apperror.Error)
+	s.Require().True(ok)
+	s.Equal(apperror.CodeValidationError, appErr.Code)
+	s.Equal(apperror.MsgNameRequired, appErr.Fields[apperror.FieldName])
+}
+
+func (s *CoreTestSuite) TestCreateItemNameTooLong() {
+	result, err := s.core.CreateItem(s.ctx, entities.CreateItemRequest{Name: testTooLongName, Description: testItemDescription})
+
+	s.Error(err)
+	s.Nil(result)
+	appErr, ok := err.(*apperror.Error)
+	s.Require().True(ok)
+	s.Equal(apperror.CodeValidationError, appErr.Code)
+	s.Equal(apperror.MsgNameTooLong, appErr.Fields[apperror.FieldName])
+}
+
+func (s *CoreTestSuite) TestCreateItemDescriptionTooLong() {
+	result, err := s.core.CreateItem(s.ctx, entities.CreateItemRequest{Name: testItemName, Description: testTooLongDescription})
+
+	s.Error(err)
+	s.Nil(result)
+	appErr, ok := err.(*apperror.Error)
+	s.Require().True(ok)
+	s.Equal(apperror.CodeValidationError, appErr.Code)
+	s.Equal(apperror.MsgDescriptionTooLong, appErr.Fields[apperror.FieldDescription])
+}
+
+func (s *CoreTestSuite) TestUpdateItemBlankName() {
+	result, err := s.core.UpdateItem(s.ctx, testItemIDHex, entities.UpdateItemRequest{Name: testBlankName, Description: testItemDescription})
+
+	s.Error(err)
+	s.Nil(result)
+	appErr, ok := err.(*apperror.Error)
+	s.Require().True(ok)
+	s.Equal(apperror.CodeValidationError, appErr.Code)
+	s.Equal(apperror.MsgNameRequired, appErr.Fields[apperror.FieldName])
+}
+
 func (s *CoreTestSuite) TestGetItemSuccess() {
 	testID, err := bson.ObjectIDFromHex(testItemIDHex)
 	s.Require().NoError(err)
@@ -149,7 +205,7 @@ func (s *CoreTestSuite) TestUpdateItemSuccess() {
 	testID, err := bson.ObjectIDFromHex(testItemIDHex)
 	s.Require().NoError(err)
 	updatedName := "Updated Name"
-	expectedArg := &item.Item{Name: updatedName, Description: testItemDescription}
+	expectedArg := &item.Item{Name: updatedName, Description: testItemDescription, UpdatedAt: testFixedTime}
 	updated := &item.Item{ID: testID, Name: updatedName, Description: testItemDescription, CreatedAt: testFixedTime, UpdatedAt: testFixedTime}
 
 	s.mockRepo.EXPECT().Update(s.ctx, testID, expectedArg).Return(updated, nil).Times(1)
@@ -159,12 +215,13 @@ func (s *CoreTestSuite) TestUpdateItemSuccess() {
 	s.NoError(err)
 	s.Require().NotNil(result)
 	s.Equal(updatedName, result.Name)
+	s.Equal(testFixedTime, result.UpdatedAt)
 }
 
 func (s *CoreTestSuite) TestUpdateItemNotFound() {
 	testID, err := bson.ObjectIDFromHex(testMissingIDHex)
 	s.Require().NoError(err)
-	expectedArg := &item.Item{Name: testItemName, Description: testItemDescription}
+	expectedArg := &item.Item{Name: testItemName, Description: testItemDescription, UpdatedAt: testFixedTime}
 
 	s.mockRepo.EXPECT().Update(s.ctx, testID, expectedArg).Return(nil, item.ErrItemNotFound).Times(1)
 

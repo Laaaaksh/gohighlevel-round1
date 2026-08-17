@@ -4,11 +4,17 @@ package health
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"github.com/Laaaaksh/gohighlevel-round1/internal/database"
 )
+
+// pingTimeout bounds the liveness check. Without it the driver keeps trying
+// to select a server until its own server selection timeout (30s by
+// default) expires, so /health would hang instead of answering 503.
+const pingTimeout = 2 * time.Second
 
 // Status values are typed constants, never inline strings, so a status
 // comparison anywhere in the codebase cannot silently mismatch on a typo.
@@ -40,7 +46,10 @@ func NewCore(mongoClient *mongo.Client) *Core {
 }
 
 func (c *Core) Check(ctx context.Context) Status {
-	if err := database.Ping(ctx, c.mongoClient); err != nil {
+	pingCtx, cancel := context.WithTimeout(ctx, pingTimeout)
+	defer cancel()
+
+	if err := database.Ping(pingCtx, c.mongoClient); err != nil {
 		return Status{Status: StatusUnavailable, Database: DatabaseDown}
 	}
 	return Status{Status: StatusOK, Database: DatabaseConnected}

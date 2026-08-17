@@ -67,10 +67,10 @@ func main() {
 	}()
 
 	collection := client.Database(cfg.Mongo.Database).Collection(entities.CollectionItems)
-	repo := item.NewRepository(collection)
+	s := &seeder{repo: item.NewRepository(collection), log: log}
 
 	for _, seed := range seedItems {
-		if err := insertSeedItem(ctx, repo, seed, log); err != nil {
+		if err := s.insert(ctx, seed); err != nil {
 			os.Exit(1)
 		}
 	}
@@ -78,15 +78,22 @@ func main() {
 	log.Info(msgSeedComplete, logFieldCount, len(seedItems))
 }
 
-func insertSeedItem(ctx context.Context, repo *item.Repository, seed seedItem, log *slog.Logger) error {
+// seeder holds the collaborators every insert needs, so insert itself takes
+// only what varies per call - see the "Stop at 4" rule in go-coding-standards.
+type seeder struct {
+	repo *item.Repository
+	log  *slog.Logger
+}
+
+func (s *seeder) insert(ctx context.Context, seed seedItem) error {
 	now := time.Now().UTC()
 	newItem := &item.Item{Name: seed.Name, Description: seed.Description, CreatedAt: now, UpdatedAt: now}
 
-	if err := repo.Create(ctx, newItem); err != nil {
-		log.Error(msgSeedItemFailed, logFieldError, err, logFieldName, seed.Name)
+	if err := s.repo.Create(ctx, newItem); err != nil {
+		s.log.Error(msgSeedItemFailed, logFieldError, err, logFieldName, seed.Name)
 		return err
 	}
 
-	log.Info(msgSeedItemCreated, logFieldID, newItem.ID.Hex(), logFieldName, newItem.Name)
+	s.log.Info(msgSeedItemCreated, logFieldID, newItem.ID.Hex(), logFieldName, newItem.Name)
 	return nil
 }

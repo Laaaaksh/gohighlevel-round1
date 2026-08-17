@@ -1,7 +1,9 @@
 package entities
 
 // Struct tags must be literals, so the max values below cannot reference
-// MaxNameLength/MaxDescriptionLength directly - keep them in sync by hand.
+// MaxNameLength/MaxDescriptionLength directly. They are a first pass only:
+// core.go re-checks every write against those constants, so a drifted tag
+// cannot let a bad value reach the database.
 
 // CreateItemRequest is the inbound shape for POST /api/items. Gin's binding
 // tags handle presence and length checks.
