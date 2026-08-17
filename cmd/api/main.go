@@ -14,6 +14,7 @@ import (
 
 	"github.com/Laaaaksh/gohighlevel-round1/internal/boot"
 	"github.com/Laaaaksh/gohighlevel-round1/internal/config"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/database"
 	"github.com/Laaaaksh/gohighlevel-round1/internal/logger"
 )
 
@@ -110,7 +111,7 @@ func shutdown(server *http.Server, app *boot.App, log *slog.Logger) {
 		log.Error(msgServerShutdownFailed, logFieldError, err)
 	}
 
-	if err := app.MongoClient.Disconnect(shutdownCtx); err != nil {
+	if err := database.Disconnect(app.MongoClient); err != nil {
 		log.Error(msgMongoDisconnectFailed, logFieldError, err)
 	}
 

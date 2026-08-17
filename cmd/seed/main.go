@@ -67,7 +67,7 @@ func run(log *slog.Logger) error {
 		return err
 	}
 	defer func() {
-		if err := client.Disconnect(ctx); err != nil {
+		if err := database.Disconnect(client); err != nil {
 			log.Error(msgDisconnectFailed, logFieldError, err)
 		}
 	}()

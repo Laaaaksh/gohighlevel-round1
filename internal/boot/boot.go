@@ -37,7 +37,7 @@ func Boot(ctx context.Context, cfg config.Config) (app *App, err error) {
 	// present today.
 	defer func() {
 		if err != nil {
-			_ = client.Disconnect(ctx)
+			_ = database.Disconnect(client)
 		}
 	}()
 

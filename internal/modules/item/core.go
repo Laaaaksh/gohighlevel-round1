@@ -70,12 +70,12 @@ func (c *Core) CreateItem(ctx context.Context, req entities.CreateItemRequest) (
 func (c *Core) GetItem(ctx context.Context, id string) (*entities.ItemResponse, error) {
 	objectID, err := parseObjectID(id)
 	if err != nil {
-		return nil, invalidIDError(id)
+		return nil, invalidIDError()
 	}
 
 	found, err := c.repo.GetByID(ctx, objectID)
 	if errors.Is(err, ErrItemNotFound) {
-		return nil, notFoundError(id)
+		return nil, notFoundError()
 	}
 	if err != nil {
 		logger.Ctx(ctx).Error(logMsgGetItemFailed, logFieldError, err, logFieldItemID, id)
@@ -105,7 +105,7 @@ func (c *Core) UpdateItem(ctx context.Context, id string, req entities.UpdateIte
 
 	objectID, err := parseObjectID(id)
 	if err != nil {
-		return nil, invalidIDError(id)
+		return nil, invalidIDError()
 	}
 
 	updated, err := c.repo.Update(ctx, objectID, &Item{
@@ -114,7 +114,7 @@ func (c *Core) UpdateItem(ctx context.Context, id string, req entities.UpdateIte
 		UpdatedAt:   c.now().UTC(),
 	})
 	if errors.Is(err, ErrItemNotFound) {
-		return nil, notFoundError(id)
+		return nil, notFoundError()
 	}
 	if err != nil {
 		logger.Ctx(ctx).Error(logMsgUpdateItemFailed, logFieldError, err, logFieldItemID, id)
@@ -128,12 +128,12 @@ func (c *Core) UpdateItem(ctx context.Context, id string, req entities.UpdateIte
 func (c *Core) DeleteItem(ctx context.Context, id string) error {
 	objectID, err := parseObjectID(id)
 	if err != nil {
-		return invalidIDError(id)
+		return invalidIDError()
 	}
 
 	if err := c.repo.Delete(ctx, objectID); err != nil {
 		if errors.Is(err, ErrItemNotFound) {
-			return notFoundError(id)
+			return notFoundError()
 		}
 		logger.Ctx(ctx).Error(logMsgDeleteItemFailed, logFieldError, err, logFieldItemID, id)
 		return apperror.Wrap(apperror.CodeInternalError, apperror.MsgInternalError, err)
@@ -168,12 +168,14 @@ func validationError(field, detail string) *apperror.Error {
 	return apperror.New(apperror.CodeValidationError, apperror.MsgValidationFailed).WithField(field, detail)
 }
 
-func invalidIDError(id string) *apperror.Error {
-	return apperror.New(apperror.CodeBadRequest, apperror.MsgInvalidID).WithField(apperror.FieldID, id)
+func invalidIDError() *apperror.Error {
+	return apperror.New(apperror.CodeBadRequest, apperror.MsgInvalidID).
+		WithField(apperror.FieldID, apperror.MsgIDMalformed)
 }
 
-func notFoundError(id string) *apperror.Error {
-	return apperror.New(apperror.CodeNotFound, apperror.MsgItemNotFound).WithField(apperror.FieldID, id)
+func notFoundError() *apperror.Error {
+	return apperror.New(apperror.CodeNotFound, apperror.MsgItemNotFound).
+		WithField(apperror.FieldID, apperror.MsgIDUnknown)
 }
 
 func toResponse(item *Item) *entities.ItemResponse {

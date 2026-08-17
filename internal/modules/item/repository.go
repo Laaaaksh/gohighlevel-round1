@@ -24,9 +24,7 @@ var (
 )
 
 const (
-	indexNameItemsByName      = "idx_items_name"
 	indexNameItemsByCreatedAt = "idx_items_created_at"
-	indexAscending            = 1
 	indexDescending           = -1
 	operatorSet               = "$set"
 )
@@ -63,19 +61,15 @@ func NewRepository(collection *mongo.Collection) *Repository {
 	return &Repository{collection: collection}
 }
 
-// EnsureIndexes creates the indexes this repository's queries rely on:
-// name for lookups by name, createdAt to back List's sort. Index creation is
-// idempotent, so it is safe to call on every boot.
+// EnsureIndexes creates one index, on createdAt descending, which is the sort
+// List issues. Nothing else here needs one: GetByID, Update and Delete all
+// filter on _id, which Mongo indexes on its own. Index creation is idempotent,
+// so it is safe to call on every boot. See the README's "add a new resource"
+// section for adding an index alongside a query you introduce.
 func (r *Repository) EnsureIndexes(ctx context.Context) error {
-	_, err := r.collection.Indexes().CreateMany(ctx, []mongo.IndexModel{
-		{
-			Keys:    bson.D{{Key: entities.FieldName, Value: indexAscending}},
-			Options: options.Index().SetName(indexNameItemsByName),
-		},
-		{
-			Keys:    bson.D{{Key: entities.FieldCreatedAt, Value: indexDescending}},
-			Options: options.Index().SetName(indexNameItemsByCreatedAt),
-		},
+	_, err := r.collection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: entities.FieldCreatedAt, Value: indexDescending}},
+		Options: options.Index().SetName(indexNameItemsByCreatedAt),
 	})
 	return err
 }

@@ -27,6 +27,17 @@ the code doesn't already make clear.
   `SetupSuite`) points MongoDB at a separate `gohighlevel_round1_test`
   database via `config/test.toml`, so e2e tests never touch the dev
   database seeded by `make seed`.
+- **`.env` lookup stops at the module root, unlike the `config/` search
+  paths above.** `loadDotEnv` tries `./.env`, then walks up to the nearest
+  directory containing `go.mod` and tries there. It deliberately does not
+  climb past that: a bare `../.env` would resolve to the repo's *parent*
+  when run from the repo root, silently picking up an unrelated file that
+  changes `PORT` or `MONGO_URI`. The `config/` paths cannot escape the same
+  way because `config/` only exists inside the repo.
+- **`next dev` writes `web/AGENTS.md` and `web/CLAUDE.md` on startup.**
+  Next.js 16 generates these agent-rule files itself; they are gitignored so
+  they do not end up in a commit. Set `agentRules: false` in
+  `web/next.config.ts` to stop it.
 
 ## Maintaining this file
 

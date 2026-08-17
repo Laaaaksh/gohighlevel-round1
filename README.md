@@ -57,12 +57,16 @@ Open http://localhost:3000 - it links to the SSR and CSR demo pages.
 
 ## 2. Endpoint reference
 
-All write endpoints validate their body and return a consistent JSON error
-shape: `{"code": "...", "message": "..."}` (see
-[`pkg/apperror`](pkg/apperror)). A `"fields"` object is added when the
-failure is attributable to named fields - the explicit checks in `core.go`
-populate it; a body that fails Gin's binding tags outright returns the
-generic `BAD_REQUEST` message without it, so no validator internals leak.
+Errors return a consistent JSON shape: `{"code": "...", "message": "..."}`
+(see [`pkg/apperror`](pkg/apperror)). A `"fields"` object is added when the
+failure is attributable to a named field - the explicit checks in `core.go`
+populate it, keyed by field name. Its values are always fixed messages, never
+the value you submitted, because the frontend renders them straight into the
+form. A body that fails Gin's binding tags outright returns the generic
+`BAD_REQUEST` message with no `fields`, so no validator internals leak.
+
+Every response below was captured from a running server against local
+MongoDB.
 
 | Method | Path              | Description        |
 |--------|-------------------|---------------------|
@@ -74,37 +78,56 @@ generic `BAD_REQUEST` message without it, so no validator internals leak.
 | DELETE | `/api/items/:id`  | Delete an item         |
 
 ```bash
-# Create
+# Create -> 201
 curl -X POST localhost:8080/api/items \
   -H 'Content-Type: application/json' \
   -d '{"name":"Widget","description":"A test widget"}'
+# {"id":"6a82c7e9136ba795994b0d01","name":"Widget","description":"A test widget",
+#  "createdAt":"2026-08-17T08:35:53.967889Z","updatedAt":"2026-08-17T08:35:53.967889Z"}
 
-# List
+# List -> 200, newest first (sorted by createdAt descending)
 curl localhost:8080/api/items
+# [{"id":"6a82c7e9136ba795994b0d02","name":"Second",...},
+#  {"id":"6a82c7e9136ba795994b0d01","name":"Widget",...}]
 
-# Get by id
-curl localhost:8080/api/items/<id>
+# Get by id -> 200
+curl localhost:8080/api/items/6a82c7e9136ba795994b0d02
+# {"id":"6a82c7e9136ba795994b0d02","name":"Second","description":"two",...}
 
-# Update
-curl -X PUT localhost:8080/api/items/<id> \
+# Update -> 200, updatedAt advances, createdAt does not
+curl -X PUT localhost:8080/api/items/6a82c7e9136ba795994b0d02 \
   -H 'Content-Type: application/json' \
   -d '{"name":"Widget v2","description":"updated"}'
+# {"id":"6a82c7e9136ba795994b0d02","name":"Widget v2","description":"updated",
+#  "createdAt":"2026-08-17T08:35:53.979Z","updatedAt":"2026-08-17T08:35:54.01Z"}
 
-# Delete
-curl -X DELETE localhost:8080/api/items/<id>
+# Delete -> 204, empty body
+curl -X DELETE localhost:8080/api/items/6a82c7e9136ba795994b0d02
+```
 
-# Error cases
-# Binding rejects the body outright - generic BAD_REQUEST, no "fields"
+Error cases:
+
+```bash
+# Binding rejects the body outright -> 400, no "fields"
 curl -X POST localhost:8080/api/items -d '{}'
+# {"code":"BAD_REQUEST","message":"The request could not be processed."}
 
-# Passes binding, fails core's explicit check - VALIDATION_ERROR with
-# "fields": {"name": "Name is required."}
+# Passes binding (name is non-empty), fails core's explicit check -> 400
 curl -X POST localhost:8080/api/items \
   -H 'Content-Type: application/json' \
   -d '{"name":"   "}'
+# {"code":"VALIDATION_ERROR","message":"The request contains an invalid field.",
+#  "fields":{"name":"Name is required."}}
 
-curl localhost:8080/api/items/not-an-id                    # 400 - invalid id
-curl localhost:8080/api/items/000000000000000000000000     # 404 - not found
+# Malformed id -> 400
+curl localhost:8080/api/items/not-an-id
+# {"code":"BAD_REQUEST","message":"The provided id is not valid.",
+#  "fields":{"id":"This id is not in the expected format."}}
+
+# Well-formed id, no such item -> 404
+curl localhost:8080/api/items/000000000000000000000000
+# {"code":"NOT_FOUND","message":"The requested item was not found.",
+#  "fields":{"id":"No item exists with this id."}}
 ```
 
 ---
@@ -122,6 +145,37 @@ intentionally domain-neutral, complete pattern. For a resource called
 3. **`repository.go`** - rewrite the `Item`/`Widget` struct's bson tags and
    any query filters. Keep the `IRepository` interface, the
    `var _ IRepository = (*Repository)(nil)` check, and `EnsureIndexes`.
+
+   `EnsureIndexes` ships with exactly one index - `createdAt` descending,
+   which is the sort `List` issues. Add an index when you add the query that
+   needs it, not before. For a `GetByName` you introduce:
+
+   ```go
+   // entities/constant.go - the field name, once
+   FieldName = "name"
+
+   // repository.go - the index name and direction as constants
+   const (
+       indexNameWidgetsByName = "idx_widgets_name"
+       indexAscending         = 1
+   )
+
+   // repository.go - inside EnsureIndexes, swap CreateOne for CreateMany
+   _, err := r.collection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+       {
+           Keys:    bson.D{{Key: entities.FieldCreatedAt, Value: indexDescending}},
+           Options: options.Index().SetName(indexNameWidgetsByCreatedAt),
+       },
+       {
+           Keys:    bson.D{{Key: entities.FieldName, Value: indexAscending}},
+           Options: options.Index().SetName(indexNameWidgetsByName),
+       },
+   })
+   ```
+
+   Add `.SetUnique(true)` to the options if the field must be unique - a
+   duplicate insert then returns a driver error you map to
+   `apperror.CodeConflict` (409).
 4. **`core.go`** - rewrite the business logic against `IRepository`. This is
    the only file that should contain domain rules; it has no `*gin.Context`.
 5. **`server.go`** - rewrite routes/handlers. This is the only file (besides
@@ -153,7 +207,7 @@ internal/
   boot/                       wires config, MongoDB, modules, routes
   config/                     typed config from config/*.toml + env vars
   constants/                  repo-wide constants, contextkeys/
-  database/                   Mongo client connect + Ping
+  database/                   Mongo client connect + Ping + Disconnect
   interceptors/                request id, recovery, logging, CORS middleware
   logger/                     structured logging (log/slog) + ctx helper
   modules/
@@ -193,8 +247,10 @@ Run `make help` for the full, current list.
 
 - **`/ssr-demo`** - a server component (no `"use client"`) that fetches
   `/api/items` on the server before the HTML is sent. Confirm with
-  `curl localhost:3000/ssr-demo | grep "Sample Item"` - the data is in the
-  raw response, not only in the hydrated DOM.
+  `curl localhost:3000/ssr-demo | grep 'item-row'` - the rendered
+  `<li class="item-row"><strong>First Sample Item</strong>` markup is in the
+  raw response, not only in the hydrated DOM. (Run `make seed` first, or the
+  list is legitimately empty.)
 - **`/csr-demo`** - a client component (`"use client"`) that fetches in the
   browser with a visible loading state, and includes the item-creation
   form (full write path from the UI).

@@ -21,9 +21,13 @@ const (
 
 // Per-field validation details. These travel in the Fields map keyed by the
 // field they describe, so a client can point at the input that was rejected
-// instead of parsing the summary message.
+// instead of parsing the summary message. Fields carries these fixed messages
+// only, never the submitted value - callers render them straight into the UI,
+// so echoing input back would put unvalidated text on the page.
 const (
 	MsgNameRequired       = "Name is required."
 	MsgNameTooLong        = "Name is longer than the maximum allowed length."
 	MsgDescriptionTooLong = "Description is longer than the maximum allowed length."
+	MsgIDMalformed        = "This id is not in the expected format."
+	MsgIDUnknown          = "No item exists with this id."
 )
