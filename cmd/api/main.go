@@ -38,13 +38,19 @@ const (
 	logFieldError = "error"
 )
 
+// main does nothing but choose the exit code: os.Exit skips deferred calls,
+// so everything holding a resource lives in run and returns an error instead.
 func main() {
-	log := logger.New()
+	if err := run(logger.New()); err != nil {
+		os.Exit(1)
+	}
+}
 
+func run(log *slog.Logger) error {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Error(msgConfigLoadFailed, logFieldError, err)
-		os.Exit(1)
+		return err
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -53,7 +59,7 @@ func main() {
 	app, err := boot.Boot(ctx, cfg)
 	if err != nil {
 		log.Error(msgBootFailed, logFieldError, err)
-		os.Exit(1)
+		return err
 	}
 
 	server := &http.Server{
@@ -61,21 +67,39 @@ func main() {
 		Handler: app.Router,
 	}
 
-	go runServer(server, log, cfg.Server.Port)
+	serverErr := make(chan error, 1)
+	go func() { serverErr <- listenAndServe(server, log, cfg.Server.Port) }()
 
-	<-ctx.Done()
+	err = awaitStop(ctx, serverErr, log)
+	// Restore default signal handling so a second Ctrl-C kills a hung shutdown.
 	stop()
-	log.Info(msgShuttingDown)
 
 	shutdown(server, app, log)
+	return err
 }
 
-func runServer(server *http.Server, log *slog.Logger, port string) {
+// awaitStop blocks until a signal arrives or the server stops on its own, and
+// reports what ended it. Either way the caller still runs shutdown, so the
+// Mongo client is always disconnected cleanly.
+func awaitStop(ctx context.Context, serverErr <-chan error, log *slog.Logger) error {
+	select {
+	case err := <-serverErr:
+		if err != nil {
+			log.Error(msgServerFailed, logFieldError, err)
+		}
+		return err
+	case <-ctx.Done():
+		log.Info(msgShuttingDown)
+		return nil
+	}
+}
+
+func listenAndServe(server *http.Server, log *slog.Logger, port string) error {
 	log.Info(msgServerStarting, logFieldPort, port)
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Error(msgServerFailed, logFieldError, err)
-		os.Exit(1)
+		return err
 	}
+	return nil
 }
 
 func shutdown(server *http.Server, app *boot.App, log *slog.Logger) {

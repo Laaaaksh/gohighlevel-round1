@@ -3,26 +3,47 @@ import { API_BASE_URL } from "@/lib/constants";
 const HEADER_CONTENT_TYPE = "Content-Type";
 const CONTENT_TYPE_JSON = "application/json";
 
+// Per-field detail keyed by the request field the backend rejected, matching
+// pkg/apperror's Fields map. Values are optional because a lookup by an
+// arbitrary field name may simply be absent.
+export type ApiErrorFields = Readonly<Record<string, string | undefined>>;
+
+export const NO_API_ERROR_FIELDS: ApiErrorFields = {};
+
 // Mirrors pkg/apperror/response.go's wire format on the Go backend.
 interface ApiErrorBody {
   code: string;
   message: string;
-  fields?: Record<string, string>;
+  fields?: ApiErrorFields;
+}
+
+function isStringRecord(value: unknown): value is ApiErrorFields {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  return Object.values(value as Record<string, unknown>).every(
+    (entry) => typeof entry === "string",
+  );
 }
 
 function isApiErrorBody(value: unknown): value is ApiErrorBody {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "message" in value &&
-    typeof (value as { message: unknown }).message === "string"
-  );
+  if (typeof value !== "object" || value === null || !("message" in value)) {
+    return false;
+  }
+  const candidate = value as { message: unknown; fields?: unknown };
+  if (typeof candidate.message !== "string") {
+    return false;
+  }
+  return candidate.fields === undefined || isStringRecord(candidate.fields);
 }
 
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    // Empty when the backend did not attribute the failure to named fields -
+    // callers must not guess which input was at fault.
+    readonly fields: ApiErrorFields = NO_API_ERROR_FIELDS,
   ) {
     super(message);
     this.name = "ApiError";
@@ -54,8 +75,10 @@ export async function request<T>(
 
   if (!res.ok) {
     const body: unknown = await res.json().catch(() => null);
-    const message = isApiErrorBody(body) ? body.message : res.statusText;
-    throw new ApiError(res.status, message);
+    if (!isApiErrorBody(body)) {
+      throw new ApiError(res.status, res.statusText);
+    }
+    throw new ApiError(res.status, body.message, body.fields ?? NO_API_ERROR_FIELDS);
   }
 
   if (res.status === NO_CONTENT_STATUS) {
