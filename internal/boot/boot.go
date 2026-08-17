@@ -25,11 +25,21 @@ type App struct {
 
 // Boot connects to MongoDB (fail-fast on an unreachable database), ensures
 // indexes, wires every module, and returns a ready-to-serve router.
-func Boot(ctx context.Context, cfg config.Config) (*App, error) {
+func Boot(ctx context.Context, cfg config.Config) (app *App, err error) {
 	client, err := database.Connect(ctx, cfg.Mongo)
 	if err != nil {
 		return nil, err
 	}
+
+	// Once Connect succeeds the pool and topology goroutines are live, so no
+	// failure below may drop the client without closing it. A defer on the
+	// named error covers boot steps added here later, not just the ones
+	// present today.
+	defer func() {
+		if err != nil {
+			_ = client.Disconnect(ctx)
+		}
+	}()
 
 	db := client.Database(cfg.Mongo.Database)
 	itemModule := item.NewModule(db.Collection(entities.CollectionItems))
