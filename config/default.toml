@@ -8,3 +8,7 @@ allowed_origin = "http://localhost:3000"
 uri = "mongodb://localhost:27017"
 database = "gohighlevel_round1"
 connect_timeout_seconds = 10
+# The driver's own default, made explicit - see database.Connect and the
+# project report's §3.6 note on why this is the service's real concurrency
+# limit, not the number of goroutines handling requests.
+max_pool_size = 100

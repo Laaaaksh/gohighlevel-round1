@@ -76,6 +76,15 @@ MongoDB.
 | GET    | `/api/items/:id`  | Get one item by id   |
 | PUT    | `/api/items/:id`  | Update an item        |
 | DELETE | `/api/items/:id`  | Delete an item         |
+| POST   | `/users`          | Register a user        |
+| POST   | `/posts`          | Create a post           |
+| GET    | `/posts`          | List a user's posts, cursor-paginated |
+| GET    | `/users/follow/:userId` | Follow a user (query `userId` is the follower) |
+| GET    | `/timeline`       | A user's timeline, cursor-paginated |
+
+See `docs/social-graph-evals.md` for the full design writeup (timeline
+fan-out strategy, indexes, pagination, latency numbers) behind the five
+endpoints above.
 
 ```bash
 # Create -> 201

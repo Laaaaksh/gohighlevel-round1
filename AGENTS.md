@@ -38,6 +38,25 @@ the code doesn't already make clear.
   Next.js 16 generates these agent-rule files itself; they are gitignored so
   they do not end up in a commit. Set `agentRules: false` in
   `web/next.config.ts` to stop it.
+- **Cross-module dependencies use structural interfaces, not imports.**
+  `post` and `follow` both need to validate a userId; each declares its own
+  narrow interface for it (e.g. `Exists(ctx, userID string) (bool, error)`)
+  in its own `core.go`, and `boot.go` passes the same `*user.Core` to both.
+  Neither module imports `user` - Go satisfies the interface structurally.
+  `timeline` extends the same pattern one step further: it has no
+  collection or repository.go of its own, only a `dependencies.go`
+  declaring the two interfaces it needs from `post` and `follow`. Follow
+  this pattern - a shared interface file plus boot.go wiring - for any
+  future module that needs another module's read path.
+- **A cursor-pagination sort needs its tie-break field in the index, not
+  just in the query's sort spec.** `posts`' compound index is
+  `(userId, createdAt desc, _id desc)`, not just `(userId, createdAt desc)`:
+  a sort on `(createdAt desc, _id desc)` against an index covering only
+  `(userId, createdAt)` still costs a blocking in-memory `SORT` stage,
+  because the index alone can't prove `_id` order within an
+  equal-`createdAt` group. `explain("executionStats")` is the way to catch
+  this - it will not show up as a correctness bug, only as an unnecessary
+  `SORT` stage in the plan.
 
 ## Maintaining this file
 
