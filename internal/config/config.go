@@ -25,6 +25,11 @@ const (
 	defaultConfigName                 = "default"
 	defaultAppEnv                     = "dev"
 	defaultMongoConnectTimeoutSeconds = 10
+	// defaultMongoMaxPoolSize is the driver's own default, made explicit
+	// rather than left implicit - see database.Connect and the project
+	// report's §3.6 note on why this is the service's real concurrency
+	// limit, not the number of goroutines handling requests.
+	defaultMongoMaxPoolSize = 100
 
 	envAppEnv   = "APP_ENV"
 	envPort     = "PORT"
@@ -51,6 +56,7 @@ type MongoConfig struct {
 	URI                   string `mapstructure:"uri"`
 	Database              string `mapstructure:"database"`
 	ConnectTimeoutSeconds int    `mapstructure:"connect_timeout_seconds"`
+	MaxPoolSize           uint64 `mapstructure:"max_pool_size"`
 }
 
 // Config is the root typed configuration for the service.
@@ -120,6 +126,9 @@ func Load() (Config, error) {
 	}
 	if cfg.Mongo.ConnectTimeoutSeconds == 0 {
 		cfg.Mongo.ConnectTimeoutSeconds = defaultMongoConnectTimeoutSeconds
+	}
+	if cfg.Mongo.MaxPoolSize == 0 {
+		cfg.Mongo.MaxPoolSize = defaultMongoMaxPoolSize
 	}
 	return cfg, nil
 }

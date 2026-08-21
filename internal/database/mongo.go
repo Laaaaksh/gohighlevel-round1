@@ -32,7 +32,12 @@ func Connect(ctx context.Context, cfg config.MongoConfig) (*mongo.Client, error)
 	connectCtx, cancel := context.WithTimeout(ctx, time.Duration(cfg.ConnectTimeoutSeconds)*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(options.Client().ApplyURI(cfg.URI))
+	// SetMaxPoolSize is explicit, not left at the driver's implicit default:
+	// the pool is the service's real concurrency ceiling under load (§3.6),
+	// not the number of goroutines handling requests, so its size belongs in
+	// config next to the value, not buried in a driver default a reader
+	// would have to go look up.
+	client, err := mongo.Connect(options.Client().ApplyURI(cfg.URI).SetMaxPoolSize(cfg.MaxPoolSize))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrConnectMongo, err)
 	}
