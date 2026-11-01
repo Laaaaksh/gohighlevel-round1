@@ -9,11 +9,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/attentionfs/gohighlevel-round1/internal/config"
-	"github.com/attentionfs/gohighlevel-round1/internal/database"
-	"github.com/attentionfs/gohighlevel-round1/internal/logger"
-	"github.com/attentionfs/gohighlevel-round1/internal/modules/item"
-	"github.com/attentionfs/gohighlevel-round1/internal/modules/item/entities"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/config"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/database"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/logger"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/item"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/item/entities"
 )
 
 const seedTimeout = 10 * time.Second

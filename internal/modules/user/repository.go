@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/attentionfs/gohighlevel-round1/internal/modules/user/entities"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/user/entities"
 )
 
 var ErrHandleTaken = errors.New("handle already taken")

@@ -9,9 +9,9 @@ import (
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 
-	"github.com/attentionfs/gohighlevel-round1/internal/logger"
-	"github.com/attentionfs/gohighlevel-round1/internal/modules/item/entities"
-	"github.com/attentionfs/gohighlevel-round1/pkg/apperror"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/logger"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/item/entities"
+	"github.com/Laaaaksh/gohighlevel-round1/pkg/apperror"
 )
 
 // ICore is the item module's business logic, free of HTTP concerns - no

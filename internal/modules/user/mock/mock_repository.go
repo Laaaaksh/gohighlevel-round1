@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	user "github.com/attentionfs/gohighlevel-round1/internal/modules/user"
+	user "github.com/Laaaaksh/gohighlevel-round1/internal/modules/user"
 	gomock "go.uber.org/mock/gomock"
 )
 

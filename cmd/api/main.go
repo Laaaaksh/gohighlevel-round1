@@ -12,10 +12,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/attentionfs/gohighlevel-round1/internal/boot"
-	"github.com/attentionfs/gohighlevel-round1/internal/config"
-	"github.com/attentionfs/gohighlevel-round1/internal/database"
-	"github.com/attentionfs/gohighlevel-round1/internal/logger"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/boot"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/config"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/database"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/logger"
 )
 
 const (

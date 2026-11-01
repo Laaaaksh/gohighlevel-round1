@@ -16,10 +16,10 @@ import (
 	"go.uber.org/mock/gomock"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/attentionfs/gohighlevel-round1/internal/modules/user"
-	"github.com/attentionfs/gohighlevel-round1/internal/modules/user/entities"
-	"github.com/attentionfs/gohighlevel-round1/internal/modules/user/mock"
-	"github.com/attentionfs/gohighlevel-round1/pkg/apperror"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/user"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/user/entities"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/user/mock"
+	"github.com/Laaaaksh/gohighlevel-round1/pkg/apperror"
 )
 
 const (

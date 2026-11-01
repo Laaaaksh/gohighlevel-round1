@@ -13,10 +13,10 @@ import (
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
 
-	postentities "github.com/attentionfs/gohighlevel-round1/internal/modules/post/entities"
-	"github.com/attentionfs/gohighlevel-round1/internal/modules/timeline"
-	"github.com/attentionfs/gohighlevel-round1/internal/modules/timeline/mock"
-	"github.com/attentionfs/gohighlevel-round1/pkg/apperror"
+	postentities "github.com/Laaaaksh/gohighlevel-round1/internal/modules/post/entities"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/timeline"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/timeline/mock"
+	"github.com/Laaaaksh/gohighlevel-round1/pkg/apperror"
 )
 
 const (

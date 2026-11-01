@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	entities "github.com/attentionfs/gohighlevel-round1/internal/modules/post/entities"
+	entities "github.com/Laaaaksh/gohighlevel-round1/internal/modules/post/entities"
 	gomock "go.uber.org/mock/gomock"
 )
 

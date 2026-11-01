@@ -6,9 +6,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/attentionfs/gohighlevel-round1/internal/logger"
-	postentities "github.com/attentionfs/gohighlevel-round1/internal/modules/post/entities"
-	"github.com/attentionfs/gohighlevel-round1/pkg/apperror"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/logger"
+	postentities "github.com/Laaaaksh/gohighlevel-round1/internal/modules/post/entities"
+	"github.com/Laaaaksh/gohighlevel-round1/pkg/apperror"
 )
 
 // ICore is the timeline module's business logic, free of HTTP concerns.

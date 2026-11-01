@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/attentionfs/gohighlevel-round1/internal/logger"
-	"github.com/attentionfs/gohighlevel-round1/pkg/apperror"
+	"github.com/Laaaaksh/gohighlevel-round1/internal/logger"
+	"github.com/Laaaaksh/gohighlevel-round1/pkg/apperror"
 )
 
 const (

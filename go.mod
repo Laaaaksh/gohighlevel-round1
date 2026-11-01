@@ -1,4 +1,4 @@
-module github.com/attentionfs/gohighlevel-round1
+module github.com/Laaaaksh/gohighlevel-round1
 
 go 1.25.3
 
