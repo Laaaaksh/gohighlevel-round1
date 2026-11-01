@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Laaaaksh/gohighlevel-round1/pkg/apperror"
+	"github.com/attentionfs/gohighlevel-round1/pkg/apperror"
 )
 
 const (

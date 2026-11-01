@@ -16,13 +16,13 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/Laaaaksh/gohighlevel-round1/internal/config"
-	"github.com/Laaaaksh/gohighlevel-round1/internal/database"
-	"github.com/Laaaaksh/gohighlevel-round1/internal/logger"
-	followEntities "github.com/Laaaaksh/gohighlevel-round1/internal/modules/follow/entities"
-	postEntities "github.com/Laaaaksh/gohighlevel-round1/internal/modules/post/entities"
-	userEntities "github.com/Laaaaksh/gohighlevel-round1/internal/modules/user/entities"
-	"github.com/Laaaaksh/gohighlevel-round1/pkg/idgen"
+	"github.com/attentionfs/gohighlevel-round1/internal/config"
+	"github.com/attentionfs/gohighlevel-round1/internal/database"
+	"github.com/attentionfs/gohighlevel-round1/internal/logger"
+	followEntities "github.com/attentionfs/gohighlevel-round1/internal/modules/follow/entities"
+	postEntities "github.com/attentionfs/gohighlevel-round1/internal/modules/post/entities"
+	userEntities "github.com/attentionfs/gohighlevel-round1/internal/modules/user/entities"
+	"github.com/attentionfs/gohighlevel-round1/pkg/idgen"
 )
 
 const (

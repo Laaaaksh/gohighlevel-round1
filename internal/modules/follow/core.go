@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Laaaaksh/gohighlevel-round1/internal/logger"
-	"github.com/Laaaaksh/gohighlevel-round1/pkg/apperror"
+	"github.com/attentionfs/gohighlevel-round1/internal/logger"
+	"github.com/attentionfs/gohighlevel-round1/pkg/apperror"
 )
 
 // UserChecker is the narrow read this module needs from the user module -

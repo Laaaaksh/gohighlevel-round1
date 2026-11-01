@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
 
-	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/follow"
-	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/follow/mock"
-	"github.com/Laaaaksh/gohighlevel-round1/pkg/apperror"
+	"github.com/attentionfs/gohighlevel-round1/internal/modules/follow"
+	"github.com/attentionfs/gohighlevel-round1/internal/modules/follow/mock"
+	"github.com/attentionfs/gohighlevel-round1/pkg/apperror"
 )
 
 const (

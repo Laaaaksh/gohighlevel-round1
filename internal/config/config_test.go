@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/Laaaaksh/gohighlevel-round1/internal/config"
+	"github.com/attentionfs/gohighlevel-round1/internal/config"
 )
 
 const (

@@ -9,10 +9,10 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/Laaaaksh/gohighlevel-round1/internal/logger"
-	"github.com/Laaaaksh/gohighlevel-round1/internal/modules/user/entities"
-	"github.com/Laaaaksh/gohighlevel-round1/pkg/apperror"
-	"github.com/Laaaaksh/gohighlevel-round1/pkg/idgen"
+	"github.com/attentionfs/gohighlevel-round1/internal/logger"
+	"github.com/attentionfs/gohighlevel-round1/internal/modules/user/entities"
+	"github.com/attentionfs/gohighlevel-round1/pkg/apperror"
+	"github.com/attentionfs/gohighlevel-round1/pkg/idgen"
 )
 
 // bcryptCost is deliberately the library default, not tuned down for

@@ -9,7 +9,7 @@ package timeline
 import (
 	"context"
 
-	postentities "github.com/Laaaaksh/gohighlevel-round1/internal/modules/post/entities"
+	postentities "github.com/attentionfs/gohighlevel-round1/internal/modules/post/entities"
 )
 
 // PostReader is the read this module needs from the post module: the same

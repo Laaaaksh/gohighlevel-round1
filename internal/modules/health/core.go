@@ -8,8 +8,8 @@ import (
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
-	"github.com/Laaaaksh/gohighlevel-round1/internal/database"
-	"github.com/Laaaaksh/gohighlevel-round1/internal/logger"
+	"github.com/attentionfs/gohighlevel-round1/internal/database"
+	"github.com/attentionfs/gohighlevel-round1/internal/logger"
 )
 
 const (
